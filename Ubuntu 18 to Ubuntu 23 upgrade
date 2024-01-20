@@ -1,0 +1,107 @@
+Steps to Upgrade Ubunt OS from 18.04 LTS to 22.04LTS
+It is not possible to upgrade OS from 18* to 22*, You will required to upgrade to 20.04 first and then from 20.04 to 22.04.
+
+1. Take AMI Backup of Server---- deleteon change >> Deeapk already aligned Veeam team. Don't take AMI in AWS.
+2. Take backups of all files  with below script
+3. Remove noexec from fstab for partition /tmp and reboot server. If noexec set on /tmp ignore this point. done 
+4. Remove pam_tally and pam_tally2 from pam files. Search if entry exists with below command.
+	   If it showing results edit those files and remove only pam_tally* entry from it.
+	   Example entry found in /etc/pam.d/common-auth >> pam_tally2.so
+	   $grep tally /etc/pam.d/*
+5. Patch OS with below commands with below commands
+		apt update -y
+		apt upgrade
+		apt dist-upgrade
+		apt full-upgrade
+		apt autoremove
+		apt autoremove –purge
+		Reboot Now/ init 6 # Reboot server once patched 18.04 OS.
+6. apt install update-manager-core #It will install do-release-upgrade tool which allow upgradation with CLI and GUI
+7. do-release-upgrade   # It will start OS upgrade from 18.04 to 20.04.
+     Use below options in intaractive mode...
+	   -- Except sshd_config file Use default option for all other configuration file upgrade. (Maintainer version)
+	   -- Install with default versions(keep your currently-installed version). You can hit enter only which uses default parameters.
+	   -- Use default option for all configuration file upgrade except ssd_config
+	The upgrade has completed but there were errors during the upgrade process.
+	   -- lxd version 4.0
+	   -- Send problem reports to developer : Press K to keep log messages..
+	         K: Keep report file for sending later or copying to somewhere else
+	   -- For below error press r
+	   Press x to destroy r to resurrect windw: Press r for below message..
+	   Command terminated with exit status 1 (Fri Oct  6 23:00:15 2023) ===
+8. Once upgraded to 20.04 use below command to update with latest patches.
+		lsb_release -a
+		uname -mrs
+		apt autoremove
+		apt autoremove –purge
+		apt update
+		apt upgrade
+		apt full-upgrade
+		Reboot now //reboot server
+9.  do-release-upgrade // This will upgrade from 20.04 to 22.04
+
+10.  After Reboot check version of OS with below commands.
+		Try to patch server to see if it success or showing repo error. 
+		If there is repo error then downoad repos for 22.04 and manage repo file /etc/apt/sources.list
+		See detils at the bottom of this file.
+		lsb_release -a
+		uname -mrs
+		apt upgrade
+		apt full-upgrade
+		apt autoremove
+		apt autoremove –purge
+		Reboot now/ init 6 //reboot server
+-----------------------
+Backup Script:
+
+#!/bin/bash
+cp /etc/ssh/sshd_config /etc/ssh/sshd_config_bkp_B4_OS_Upgrade
+cp /etc/fstab /etc/fstab_bkp_B4_OS_Upgrade
+cp /etc/hosts.allow /etc/hosts.allow_bkp_B4_OS_Upgrade
+cp /etc/hosts.deny /etc/hosts.deny_bkp_B4_OS_Upgrade
+cp /etc/passwd /etc/passwd_bkp_B4_OS_Upgrade
+cp /etc/sudoers /etc/sudoers_bkp_B4_OS_Upgrade
+cp /etc/shadow /etc/shadow_bkp_B4_OS_Upgrade
+cp /etc/bashrc /etc/bashrc_bkp_B4_OS_Upgrade
+cp /etc/pam.d/password-auth /etc/pam.d/password-auth_bkp_B4_OS_Upgrade
+cp /etc/pam.d/login /etc/pam.d/login_bkp_B4_OS_Upgrade
+cp /etc/pam.d/passwd /etc/pam.d/passwd_bkp_B4_OS_Upgrade
+cp /boot/grub2/grub.cfg /boot/grub2/grub.cfg_bkp
+#Repo backup Ubuntu
+cp /etc/apt/sources.list /etc/apt/sources.list_bkp_B4_OS_Upgrade
+#RHEL Repo Bkp
+#cp /etc/yum.repos.d/* /etc/yum_repos_backup/
+# FOR CentOS
+#cp /boot/grub2/grub.cfg /boot/grub2/new_grub_bkp
+-----------------
+Asked Intaractive parameters
+keep your currently-installed version
+	/etc/security/limits.conf
+	/etc/default/useradd
+	/etc/issue.net
+	/etc/security/pwquality.conf
+	/etc/modprobe.d/blacklist.conf
+	/etc/sysctl.conf
+	/etc/rsyslog.conf
+	
+	/etc/ssh/sshd_config  >> don't use defaiult option, update maintainer version as per new os 
+############ GRUB ##################
+If asked to upgrade version for grub file, always use latest version insted of using default options which keeps current version.
+/boot/grub/menu.lst >> with New version
+############ REPO ##################
+Enable third-party repositories
+$ls -l etc/apt/sources.list.d/
+To enable them, simply open each file and uncomment the entries by deleting the # sign at the beginning of each line.
+Finally, free up the disk space by removing all the unnecessary packages as follows:
+$ sudo apt autoremove –purge
+
+Error for below packages:
+apt remove mysql*
+apt remove apparmor*
+
+------------------------ End Of File Thank You!! ------------------------
+------------------------ End Of File Thank You!! ------------------------ 
+/etc/pam.d/common-password
+password        [success=1 default=ignore]      pam_unix.so obscure sha512 minlen=8
+password        requisite                       pam_deny.so
+password        required                        pam_permit.so
